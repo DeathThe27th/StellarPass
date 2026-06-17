@@ -98,7 +98,7 @@ export default function DemoPage() {
               rel="noopener noreferrer"
               className="block text-blue-400 text-xs hover:underline"
             >
-              View transaction →
+              View transaction -&gt;
             </a>
           </div>
         )}

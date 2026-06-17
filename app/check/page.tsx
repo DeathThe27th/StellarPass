@@ -64,7 +64,7 @@ export default function CheckPage() {
               rel="noopener noreferrer"
               className="block text-blue-400 text-xs hover:underline mt-2"
             >
-              View on Stellar Expert →
+              View on Stellar Expert -&gt;
             </a>
           </div>
         )}
@@ -75,7 +75,7 @@ export default function CheckPage() {
             <h2 className="text-gray-400 font-bold text-lg">Not Verified</h2>
             <p className="text-gray-600 text-sm">This wallet has no StellarPass stamp.</p>
             <Link href="/verify" className="block text-blue-400 text-xs hover:underline mt-2">
-              Get verified →
+              Get verified -&gt;
             </Link>
           </div>
         )}
