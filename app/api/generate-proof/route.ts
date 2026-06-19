@@ -1,37 +1,42 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createHash } from "crypto";
+import { execFile } from "child_process";
+import { join } from "path";
+import { promisify } from "util";
 
-// Simulated Poseidon2 for proof stub — real circuit proof generated via
-// Barretenberg WASM. For hackathon demo the proof bytes are generated
-// server-side and passed to stamp-identity which trusts the issuer backend.
-function mockPoseidon(a: string, b: string): string {
-  return "0x" + createHash("sha256").update(a + b).digest("hex").slice(0, 62);
-}
+const execFileAsync = promisify(execFile);
 
 export async function POST(req: NextRequest) {
-  const { credential } = await req.json();
+  try {
+    const { credential } = await req.json();
 
-  const currentTimestamp = Math.floor(Date.now() / 1000);
+    const proverPath = join(process.cwd(), "scripts", "prover.mjs");
 
-  const nullifierHash = mockPoseidon(
-    credential.nullifier_secret,
-    credential.wallet
-  );
+    // Run the standalone prover script, passing credential via stdin
+    const { stdout, stderr } = await execFileAsync(
+      "node",
+      [proverPath],
+      {
+        input: JSON.stringify(credential),
+        timeout: 120_000, // 2 min timeout — proof generation takes time
+        maxBuffer: 10 * 1024 * 1024, // 10MB buffer for proof output
+        env: {
+          ...process.env,
+          // Ensure node_modules is resolvable from the script's location
+          NODE_PATH: join(process.cwd(), "node_modules"),
+        },
+      }
+    );
 
-  // In production: run nargo prove / bb prove WASM here
-  // For demo: return structured public inputs the contract needs
-  const publicInputs = {
-    wallet_address: credential.wallet,
-    min_kyc_level: 2,
-    current_timestamp: currentTimestamp,
-    issuer_pubkey_hash: credential.issuer_pubkey_hash,
-    nullifier_hash: nullifierHash,
-  };
+    if (stderr) {
+      console.warn("Prover stderr:", stderr);
+    }
 
-  // Mock proof bytes (real proof is 2kb UltraHonk)
-  const proof = "0x" + createHash("sha256")
-    .update(JSON.stringify(publicInputs) + credential.nullifier_secret)
-    .digest("hex");
+    const result = JSON.parse(stdout);
+    return NextResponse.json(result);
 
-  return NextResponse.json({ proof, publicInputs });
+  } catch (e: unknown) {
+    console.error("Proof generation error:", e);
+    const msg = e instanceof Error ? e.message : "Proof generation failed";
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
 }
