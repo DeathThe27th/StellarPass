@@ -14,6 +14,10 @@ export async function POST(req: NextRequest) {
   try {
     const { credential } = await req.json();
 
+    // Point bb.js CRS cache to /tmp — only writable dir on Vercel
+    process.env.XDG_CACHE_HOME = "/tmp";
+    process.env.HOME = "/tmp";
+
     const { Noir } = await import("@noir-lang/noir_js");
     const { Barretenberg, BackendType, UltraHonkBackend } = await import("@aztec/bb.js");
     const { readFileSync } = await import("fs");
@@ -39,9 +43,7 @@ export async function POST(req: NextRequest) {
 
     const api = await Barretenberg.new({ backend: BackendType.Wasm });
     const backend = new UltraHonkBackend(circuit.bytecode, api);
-    const { proof, publicInputs } = await backend.generateProof(witness, {
-      
-    });
+    const { proof, publicInputs } = await backend.generateProof(witness);
 
     await (api as any).destroy();
 
