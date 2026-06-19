@@ -1,22 +1,32 @@
+// Force this route to run as a Node.js server-side function, never bundled
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from "next/server";
-import { spawn } from "child_process";
-import { join } from "path";
 
 function runProver(credential: object): Promise<string> {
+  // Dynamic imports to prevent Next.js from bundling these at build time
+  const { spawn } = require("child_process") as typeof import("child_process");
+  const { join } = require("path") as typeof import("path");
+
   return new Promise((resolve, reject) => {
     const proverPath = join(process.cwd(), "scripts", "prover.mjs");
+
     const child = spawn("node", [proverPath], {
       timeout: 120_000,
-      env: { ...process.env, NODE_PATH: join(process.cwd(), "node_modules") },
+      env: {
+        ...process.env,
+        NODE_PATH: join(process.cwd(), "node_modules"),
+      },
     });
 
     let stdout = "";
     let stderr = "";
 
-    child.stdout.on("data", (d) => { stdout += d.toString(); });
-    child.stderr.on("data", (d) => { stderr += d.toString(); });
+    child.stdout.on("data", (d: Buffer) => { stdout += d.toString(); });
+    child.stderr.on("data", (d: Buffer) => { stderr += d.toString(); });
 
-    child.on("close", (code) => {
+    child.on("close", (code: number) => {
       if (code !== 0) {
         reject(new Error(stderr || `Prover exited with code ${code}`));
       } else {
@@ -26,7 +36,6 @@ function runProver(credential: object): Promise<string> {
 
     child.on("error", reject);
 
-    // Send credential via stdin
     child.stdin.write(JSON.stringify(credential));
     child.stdin.end();
   });
