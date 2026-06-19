@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
     const api = await Barretenberg.new({ backend: BackendType.Wasm });
     const backend = new UltraHonkBackend(circuit.bytecode, api);
     const { proof, publicInputs } = await backend.generateProof(witness, {
-      honkRecursion: false,
+      
     });
 
     await (api as any).destroy();
