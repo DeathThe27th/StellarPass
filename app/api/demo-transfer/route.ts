@@ -11,12 +11,35 @@ import {
   Address,
   nativeToScVal,
   Keypair,
+  scValToNative,
 } from "@stellar/stellar-sdk";
 
 const RPC_URL = process.env.NEXT_PUBLIC_STELLAR_RPC!;
 const REGISTRY_CONTRACT = process.env.NEXT_PUBLIC_REGISTRY_CONTRACT!;
+const RWA_CONTRACT = process.env.NEXT_PUBLIC_RWA_CONTRACT!;
 const ISSUER_SECRET = process.env.ISSUER_SECRET!;
 const server = new rpc.Server(RPC_URL, { allowHttp: false });
+
+async function checkVerified(wallet: string, issuerAccount: any): Promise<boolean> {
+  try {
+    const registry = new Contract(REGISTRY_CONTRACT);
+    const tx = new TransactionBuilder(issuerAccount, {
+      fee: BASE_FEE,
+      networkPassphrase: Networks.TESTNET,
+    })
+      .addOperation(registry.call("verify_id", new Address(wallet).toScVal()))
+      .setTimeout(30)
+      .build();
+
+    const sim = await server.simulateTransaction(tx);
+    if (rpc.Api.isSimulationSuccess(sim) && sim.result) {
+      return scValToNative(sim.result.retval) as boolean;
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -26,35 +49,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
 
-    // Check both wallets are verified in the registry
-    async function isVerified(wallet: string): Promise<boolean> {
-      try {
-        const contract = new Contract(REGISTRY_CONTRACT);
-        const dummy = Keypair.random();
-        await fetch(`https://friendbot.stellar.org?addr=${dummy.publicKey()}`);
-        await new Promise(r => setTimeout(r, 3000));
-        const acc = await server.getAccount(dummy.publicKey());
-        const tx = new TransactionBuilder(acc, {
-          fee: BASE_FEE,
-          networkPassphrase: Networks.TESTNET,
-        })
-          .addOperation(contract.call("verify_identity", new Address(wallet).toScVal()))
-          .setTimeout(30)
-          .build();
-        const result = await server.simulateTransaction(tx);
-        if (rpc.Api.isSimulationSuccess(result) && result.result) {
-          const { scValToNative } = await import("@stellar/stellar-sdk");
-          return scValToNative(result.result.retval) as boolean;
-        }
-        return false;
-      } catch {
-        return false;
-      }
-    }
+    const issuer = Keypair.fromSecret(ISSUER_SECRET);
+    const issuerAccount = await server.getAccount(issuer.publicKey());
 
+    // Check KYC status using the issuer account for simulation (no friendbot needed)
     const [fromVerified, toVerified] = await Promise.all([
-      isVerified(from),
-      isVerified(to),
+      checkVerified(from, issuerAccount),
+      checkVerified(to, issuerAccount),
     ]);
 
     if (!fromVerified) {
@@ -71,14 +72,13 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Both verified — execute the transfer via the issuer keypair
-    // (in production the user would sign this themselves via Freighter)
-    const issuer = Keypair.fromSecret(ISSUER_SECRET);
-    const account = await server.getAccount(issuer.publicKey());
-    const RWA_CONTRACT = process.env.NEXT_PUBLIC_RWA_CONTRACT!;
+    // Both verified — execute transfer
     const rwaContract = new Contract(RWA_CONTRACT);
 
-    const tx = new TransactionBuilder(account, {
+    // Refresh account sequence number
+    const freshAccount = await server.getAccount(issuer.publicKey());
+
+    const tx = new TransactionBuilder(freshAccount, {
       fee: BASE_FEE,
       networkPassphrase: Networks.TESTNET,
     })
@@ -105,7 +105,6 @@ export async function POST(req: NextRequest) {
     preparedTx.sign(issuer);
     const sendResult = await server.sendTransaction(preparedTx);
 
-    // Poll for completion
     let getResult = await server.getTransaction(sendResult.hash);
     let attempts = 0;
     while (getResult.status === "NOT_FOUND" && attempts < 20) {
