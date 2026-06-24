@@ -1,0 +1,6 @@
+[package]
+name = "stellarpass_credential"
+type = "bin"
+authors = ["StellarPass"]
+
+[dependencies]
