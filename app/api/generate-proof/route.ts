@@ -3,41 +3,41 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
 import { NextRequest, NextResponse } from "next/server";
+import { createRequire } from "module";
+
+const require = createRequire(import.meta.url);
 
 export async function POST(req: NextRequest) {
   try {
     const { credential } = await req.json();
 
-    // Use eval-based dynamic execution to prevent Turbopack from analyzing spawn
-    const result = await new Function("credential", `
-      return new Promise((resolve, reject) => {
-        const { spawn } = require("child_process");
-        const { join } = require("path");
-        const home = process.env.HOME || "/root";
-        const proverPath = join(process.cwd(), "scripts", "prover.mjs");
+    const { spawn } = require("child_process");
+    const { join } = require("path");
+    const home = process.env.HOME || "/root";
+    const proverPath = join(process.cwd(), "scripts", "prover.mjs");
 
-        const child = spawn("node", [proverPath], {
-          timeout: 120000,
-          env: Object.assign({}, process.env, {
-            HOME: home,
-            XDG_CACHE_HOME: "/tmp",
-            PATH: home + "/.nargo/bin:" + home + "/.bb/bin:" + (process.env.PATH || ""),
-          }),
-        });
-
-        let stdout = "";
-        let stderr = "";
-        child.stdout.on("data", d => { stdout += d.toString(); });
-        child.stderr.on("data", d => { stderr += d.toString(); });
-        child.on("close", code => {
-          if (code !== 0) reject(new Error(stderr || "Prover failed: " + code));
-          else resolve(JSON.parse(stdout));
-        });
-        child.on("error", reject);
-        child.stdin.write(JSON.stringify(credential));
-        child.stdin.end();
+    const result = await new Promise<object>((resolve, reject) => {
+      const child = spawn("node", [proverPath], {
+        timeout: 120000,
+        env: Object.assign({}, process.env, {
+          HOME: home,
+          XDG_CACHE_HOME: "/tmp",
+          PATH: home + "/.nargo/bin:" + home + "/.bb/bin:" + (process.env.PATH || ""),
+        }),
       });
-    `)(credential);
+
+      let stdout = "";
+      let stderr = "";
+      child.stdout.on("data", (d: Buffer) => { stdout += d.toString(); });
+      child.stderr.on("data", (d: Buffer) => { stderr += d.toString(); });
+      child.on("close", (code: number) => {
+        if (code !== 0) reject(new Error(stderr || "Prover failed: " + code));
+        else resolve(JSON.parse(stdout));
+      });
+      child.on("error", reject);
+      child.stdin.write(JSON.stringify(credential));
+      child.stdin.end();
+    });
 
     return NextResponse.json(result);
   } catch (e: unknown) {
