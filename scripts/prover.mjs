@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { createHash } from "crypto";
-import { readFileSync, writeFileSync, mkdtempSync, rmSync } from "fs";
+import { readFileSync, writeFileSync, mkdtempSync, mkdirSync, copyFileSync, rmSync, existsSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { execSync } from "child_process";
@@ -18,48 +18,65 @@ async function main() {
   for await (const chunk of process.stdin) raw += chunk;
   const credential = JSON.parse(raw);
 
-  const circuitDir = join(process.cwd(), "circuits", "stellarpass_credential");
-  const circuitJson = join(circuitDir, "target", "stellarpass_credential.json");
-  const witnessGz = join(circuitDir, "target", "stellarpass_credential.gz");
-  const vkPath = join(circuitDir, "target", "vk");
+  const cwd = process.cwd();
+  const circuitSrc = join(cwd, "circuits", "stellarpass_credential");
+  const circuitJson = join(circuitSrc, "target", "stellarpass_credential.json");
+  const vkPath = join(circuitSrc, "target", "vk");
 
-  const currentTimestamp = Math.floor(Date.now() / 1000);
+  // Work entirely in /tmp — only writable dir on Vercel
+  const workDir = mkdtempSync(join(tmpdir(), "stellarpass-"));
+  const targetDir = join(workDir, "target");
+  const srcDir = join(workDir, "src");
+  mkdirSync(targetDir, { recursive: true });
+  mkdirSync(srcDir, { recursive: true });
 
-  const nargoBin = process.env.HOME + "/.nargo/bin";
-  const bbBin = process.env.HOME + "/.bb/bin";
-  const PATH = nargoBin + ":" + bbBin + ":" + process.env.PATH;
-
-  const proverToml = [
-    'kyc_level = "' + credential.kyc_level + '"',
-    'country_code = "' + credential.country_code + '"',
-    'expiry = "' + credential.expiry + '"',
-    'wallet_address = "' + strToField(credential.wallet) + '"',
-    'min_kyc_level = "2"',
-    'current_timestamp = "' + currentTimestamp + '"',
-    'issuer_pubkey_hash = "' + strToField(credential.issuer_pubkey_hash) + '"',
-  ].join("\n");
-
-  writeFileSync(join(circuitDir, "Prover.toml"), proverToml);
-
-  execSync("nargo execute", {
-    cwd: circuitDir,
-    env: Object.assign({}, process.env, { PATH }),
-    stdio: "pipe",
-  });
-
-  const tmpDir = mkdtempSync(join(tmpdir(), "stellarpass-"));
   try {
-    const bbPath = bbBin + "/bb";
+    // Copy circuit files into /tmp
+    copyFileSync(join(circuitSrc, "Nargo.toml"), join(workDir, "Nargo.toml"));
+    copyFileSync(join(circuitSrc, "src", "main.nr"), join(srcDir, "main.nr"));
+    copyFileSync(circuitJson, join(targetDir, "stellarpass_credential.json"));
+
+    const currentTimestamp = Math.floor(Date.now() / 1000);
+
+    // Write Prover.toml in /tmp
+    const proverToml = [
+      'kyc_level = "' + credential.kyc_level + '"',
+      'country_code = "' + credential.country_code + '"',
+      'expiry = "' + credential.expiry + '"',
+      'wallet_address = "' + strToField(credential.wallet) + '"',
+      'min_kyc_level = "2"',
+      'current_timestamp = "' + currentTimestamp + '"',
+      'issuer_pubkey_hash = "' + strToField(credential.issuer_pubkey_hash) + '"',
+    ].join("\n");
+    writeFileSync(join(workDir, "Prover.toml"), proverToml);
+
+    const home = process.env.HOME || "/root";
+    const nargoBin = join(cwd, "bin", "nargo");
+    const bbBin = join(cwd, "bin", "bb");
+
+    // nargo execute in /tmp workdir
+    execSync(nargoBin + " execute", {
+      cwd: workDir,
+      env: Object.assign({}, process.env, { HOME: home, XDG_CACHE_HOME: tmpdir() }),
+      stdio: "pipe",
+    });
+
+    const witnessGz = join(targetDir, "stellarpass_credential.gz");
+    const circuitJsonTmp = join(targetDir, "stellarpass_credential.json");
+    const proofOutDir = mkdtempSync(join(tmpdir(), "proof-"));
+
+    // bb prove in /tmp
     execSync(
-      bbPath + " prove -b " + circuitJson +
+      bbBin + " prove" +
+      " -b " + circuitJsonTmp +
       " -w " + witnessGz +
-      " -o " + tmpDir +
+      " -o " + proofOutDir +
       " --scheme ultra_honk --oracle_hash keccak --output_format bytes_and_fields",
-      { stdio: "pipe" }
+      { stdio: "pipe", env: Object.assign({}, process.env, { HOME: home }) }
     );
 
-    const proof = readFileSync(join(tmpDir, "proof"));
-    const publicInputs = readFileSync(join(tmpDir, "public_inputs"));
+    const proof = readFileSync(join(proofOutDir, "proof"));
+    const publicInputs = readFileSync(join(proofOutDir, "public_inputs"));
     const vk = readFileSync(vkPath);
 
     const pubInputsArray = [];
@@ -73,8 +90,10 @@ async function main() {
       proofSize: proof.length,
       vkSize: vk.length,
     }));
+
+    rmSync(proofOutDir, { recursive: true, force: true });
   } finally {
-    rmSync(tmpDir, { recursive: true, force: true });
+    rmSync(workDir, { recursive: true, force: true });
   }
 }
 
