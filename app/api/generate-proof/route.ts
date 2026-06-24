@@ -4,20 +4,22 @@ export const maxDuration = 120;
 
 import { NextRequest, NextResponse } from "next/server";
 import { createRequire } from "module";
-
-const require = createRequire(import.meta.url);
+import { fileURLToPath } from "url";
 
 export async function POST(req: NextRequest) {
   try {
     const { credential } = await req.json();
 
-    const { spawn } = require("child_process");
-    const { join } = require("path");
+    const _require = createRequire(fileURLToPath(import.meta.url));
+    const childProcess = _require("child_process");
+    const pathMod = _require("path");
+
     const home = process.env.HOME || "/root";
-    const proverPath = join(process.cwd(), "scripts", "prover.mjs");
+    const cwd = process.cwd();
+    const proverPath = pathMod.join(cwd, "scripts", "prover.mjs");
 
     const result = await new Promise<object>((resolve, reject) => {
-      const child = spawn("node", [proverPath], {
+      const child = childProcess.spawn("node", [proverPath], {
         timeout: 120000,
         env: Object.assign({}, process.env, {
           HOME: home,
