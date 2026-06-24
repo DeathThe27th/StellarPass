@@ -18,7 +18,7 @@ async function main() {
   for await (const chunk of process.stdin) raw += chunk;
   const credential = JSON.parse(raw);
 
-  const circuitDir = join(__dirname, "..", "..", "circuits", "stellarpass_credential");
+  const circuitDir = join(process.cwd(), "circuits", "stellarpass_credential");
   const circuitJson = join(circuitDir, "target", "stellarpass_credential.json");
   const witnessGz = join(circuitDir, "target", "stellarpass_credential.gz");
   const vkPath = join(circuitDir, "target", "vk");
