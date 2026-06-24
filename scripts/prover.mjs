@@ -57,7 +57,7 @@ async function main() {
     // nargo execute in /tmp workdir
     execSync(nargoBin + " execute", {
       cwd: workDir,
-      env: Object.assign({}, process.env, { HOME: home, XDG_CACHE_HOME: tmpdir() }),
+      env: Object.assign({}, process.env, { HOME: "/tmp", XDG_CACHE_HOME: "/tmp", NARGO_HOME: "/tmp", GIT_CONFIG_NOSYSTEM: "1", GIT_CONFIG_COUNT: "0" }),
       stdio: "pipe",
     });
 
