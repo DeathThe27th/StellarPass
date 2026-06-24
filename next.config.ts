@@ -8,6 +8,9 @@ const nextConfig: NextConfig = {
     "@noir-lang/types",
     "@aztec/bb.js",
   ],
+  experimental: {
+    serverComponentsExternalPackages: ["child_process", "fs", "path", "os"],
+  },
 };
 
 export default nextConfig;
