@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import {
   Contract, Networks, rpc, TransactionBuilder,
-  BASE_FEE, Address, xdr, Keypair,
+  Address, xdr, Keypair,
 } from "@stellar/stellar-sdk";
 
 const RPC_URL = process.env.NEXT_PUBLIC_STELLAR_RPC!;
@@ -20,28 +20,20 @@ export async function POST(req: NextRequest) {
     const account = await server.getAccount(issuer.publicKey());
     const contract = new Contract(VERIFIER_CONTRACT);
 
-    // Convert proof hex to bytes ScVal
-    const proofHex = proof.replace("0x", "");
-    const proofBuffer = Buffer.from(proofHex, "hex");
+    // proof is "0x" + hex string of 14592 raw bytes
+    const proofBuffer = Buffer.from(proof.replace("0x", ""), "hex");
     const proofScVal = xdr.ScVal.scvBytes(proofBuffer);
 
-    // Encode public inputs as bytes (4 x 32-byte fields)
-    // Order matches circuit: wallet_address, min_kyc_level, current_timestamp, issuer_pubkey_hash
+    // publicInputs is array of "0x" + 32-byte hex strings — concat them
     const pubInputsBuffer = Buffer.concat(
-      publicInputs.map((pi: string) => {
-        const hex = pi.replace("0x", "").padStart(64, "0");
-        return Buffer.from(hex, "hex");
-      })
+      publicInputs.map((pi: string) =>
+        Buffer.from(pi.replace("0x", "").padStart(64, "0"), "hex")
+      )
     );
     const pubInputsScVal = xdr.ScVal.scvBytes(pubInputsBuffer);
 
-    // Wallet address
     const walletScVal = new Address(credential.wallet).toScVal();
-
-    // KYC level as u32
     const kycLevelScVal = xdr.ScVal.scvU32(credential.kyc_level);
-
-    // Expiry as u64
     const expiryScVal = xdr.ScVal.scvU64(
       xdr.Uint64.fromString(credential.expiry.toString())
     );

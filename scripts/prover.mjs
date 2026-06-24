@@ -1,13 +1,10 @@
 #!/usr/bin/env node
-// Standalone prover — runs outside Next.js to avoid WASM path issues
-// Reads credential JSON from stdin, writes proof JSON to stdout
-
-import { Noir } from "@noir-lang/noir_js";
-import { UltraHonkBackend, Barretenberg, BackendType } from "@aztec/bb.js";
 import { createHash } from "crypto";
-import { readFileSync } from "fs";
+import { readFileSync, writeFileSync, mkdtempSync, rmSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
+import { execSync } from "child_process";
+import { tmpdir } from "os";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -21,41 +18,64 @@ async function main() {
   for await (const chunk of process.stdin) raw += chunk;
   const credential = JSON.parse(raw);
 
-  const circuitPath = join(__dirname, "..", "circuits", "stellarpass_credential.json");
-  const circuit = JSON.parse(readFileSync(circuitPath, "utf-8"));
+  const circuitDir = join(__dirname, "..", "..", "circuits", "stellarpass_credential");
+  const circuitJson = join(circuitDir, "target", "stellarpass_credential.json");
+  const witnessGz = join(circuitDir, "target", "stellarpass_credential.gz");
+  const vkPath = join(circuitDir, "target", "vk");
 
   const currentTimestamp = Math.floor(Date.now() / 1000);
 
-  const inputs = {
-    // Private
-    kyc_level: credential.kyc_level.toString(),
-    country_code: credential.country_code.toString(),
-    expiry: credential.expiry.toString(),
-    // Public
-    wallet_address: strToField(credential.wallet),
-    min_kyc_level: "2",
-    current_timestamp: currentTimestamp.toString(),
-    issuer_pubkey_hash: strToField(credential.issuer_pubkey_hash),
-  };
+  const nargoBin = process.env.HOME + "/.nargo/bin";
+  const bbBin = process.env.HOME + "/.bb/bin";
+  const PATH = nargoBin + ":" + bbBin + ":" + process.env.PATH;
 
-  // Execute circuit to get witness
-  const noir = new Noir(circuit);
-  const { witness } = await noir.execute(inputs);
+  const proverToml = [
+    'kyc_level = "' + credential.kyc_level + '"',
+    'country_code = "' + credential.country_code + '"',
+    'expiry = "' + credential.expiry + '"',
+    'wallet_address = "' + strToField(credential.wallet) + '"',
+    'min_kyc_level = "2"',
+    'current_timestamp = "' + currentTimestamp + '"',
+    'issuer_pubkey_hash = "' + strToField(credential.issuer_pubkey_hash) + '"',
+  ].join("\n");
 
-  // Generate real UltraHonk proof
-  const api = await Barretenberg.new({ backend: BackendType.Wasm });
-  const backend = new UltraHonkBackend(circuit.bytecode, api);
-  const { proof, publicInputs } = await backend.generateProof(witness, {
-    honkRecursion: false,
+  writeFileSync(join(circuitDir, "Prover.toml"), proverToml);
+
+  execSync("nargo execute", {
+    cwd: circuitDir,
+    env: Object.assign({}, process.env, { PATH }),
+    stdio: "pipe",
   });
 
-  await api.destroy();
+  const tmpDir = mkdtempSync(join(tmpdir(), "stellarpass-"));
+  try {
+    const bbPath = bbBin + "/bb";
+    execSync(
+      bbPath + " prove -b " + circuitJson +
+      " -w " + witnessGz +
+      " -o " + tmpDir +
+      " --scheme ultra_honk --oracle_hash keccak --output_format bytes_and_fields",
+      { stdio: "pipe" }
+    );
 
-  process.stdout.write(JSON.stringify({
-    proof: "0x" + Buffer.from(proof).toString("hex"),
-    publicInputs,
-    proofSize: proof.length,
-  }));
+    const proof = readFileSync(join(tmpDir, "proof"));
+    const publicInputs = readFileSync(join(tmpDir, "public_inputs"));
+    const vk = readFileSync(vkPath);
+
+    const pubInputsArray = [];
+    for (let i = 0; i < publicInputs.length; i += 32) {
+      pubInputsArray.push("0x" + publicInputs.slice(i, i + 32).toString("hex"));
+    }
+
+    process.stdout.write(JSON.stringify({
+      proof: "0x" + proof.toString("hex"),
+      publicInputs: pubInputsArray,
+      proofSize: proof.length,
+      vkSize: vk.length,
+    }));
+  } finally {
+    rmSync(tmpDir, { recursive: true, force: true });
+  }
 }
 
 main().catch(e => {
