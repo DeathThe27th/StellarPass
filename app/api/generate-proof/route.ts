@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
   try {
     const { credential } = await req.json();
 
-    const res = await fetch(PROVER_URL + "/prove", {
+    const res = await fetch(PROVER_URL.replace(/\/+$/, "") + "/prove", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(credential),
