@@ -3,44 +3,26 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
 import { NextRequest, NextResponse } from "next/server";
-import { createRequire } from "module";
-import { fileURLToPath } from "url";
+
+const PROVER_URL = process.env.PROVER_URL || "https://psychic-potato-7w74vp54x57hpp75-4000.app.github.dev";
 
 export async function POST(req: NextRequest) {
   try {
     const { credential } = await req.json();
 
-    const _require = createRequire(fileURLToPath(import.meta.url));
-    const childProcess = _require("child_process");
-    const pathMod = _require("path");
-
-    const home = process.env.HOME || "/root";
-    const cwd = process.cwd();
-    const proverPath = pathMod.join(cwd, "scripts", "prover.mjs");
-
-    const result = await new Promise<object>((resolve, reject) => {
-      const child = childProcess.spawn("node", [proverPath], {
-        timeout: 120000,
-        env: Object.assign({}, process.env, {
-          HOME: home,
-          XDG_CACHE_HOME: "/tmp",
-          PATH: home + "/.nargo/bin:" + home + "/.bb/bin:" + (process.env.PATH || ""),
-        }),
-      });
-
-      let stdout = "";
-      let stderr = "";
-      child.stdout.on("data", (d: Buffer) => { stdout += d.toString(); });
-      child.stderr.on("data", (d: Buffer) => { stderr += d.toString(); });
-      child.on("close", (code: number) => {
-        if (code !== 0) reject(new Error(stderr || "Prover failed: " + code));
-        else resolve(JSON.parse(stdout));
-      });
-      child.on("error", reject);
-      child.stdin.write(JSON.stringify(credential));
-      child.stdin.end();
+    const res = await fetch(PROVER_URL + "/prove", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(credential),
+      signal: AbortSignal.timeout(110_000),
     });
 
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error("Prover error: " + err);
+    }
+
+    const result = await res.json();
     return NextResponse.json(result);
   } catch (e: unknown) {
     console.error("Proof generation error:", e);
