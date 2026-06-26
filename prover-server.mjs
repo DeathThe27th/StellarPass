@@ -47,7 +47,7 @@ app.post("/prove", async (req, res) => {
     const home = process.env.HOME || "/root";
     const PATH = home + "/.nargo/bin:" + home + "/.bb/bin:" + process.env.PATH;
 
-    execSync("nargo execute", {
+    execSync(join(__dirname, "bin", "nargo") + " execute", {
       cwd: workDir,
       env: Object.assign({}, process.env, { PATH, HOME: home, NARGO_HOME: "/tmp" }),
       stdio: "pipe",
