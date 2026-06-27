@@ -17,6 +17,44 @@ function strToField(str) {
 
 app.get("/health", (_, res) => res.json({ ok: true, service: "stellarpass-prover" }));
 
+// Regenerate the verification key with the SAME bb/circuit the prover uses,
+// via the canonical command from the verifier repo's build_all.sh. Lets us
+// compare against the deployed on-chain VK to rule out a stale/mismatched VK.
+app.get("/vk", async (_req, res) => {
+  const circuitSrc = join(__dirname, "circuits", "stellarpass_credential");
+  const workDir = mkdtempSync(join(tmpdir(), "stellarpass-vk-"));
+  const srcDir = join(workDir, "src");
+  try {
+    mkdirSync(srcDir, { recursive: true });
+    copyFileSync(join(circuitSrc, "Nargo.toml"), join(workDir, "Nargo.toml"));
+    copyFileSync(join(circuitSrc, "src", "main.nr"), join(srcDir, "main.nr"));
+
+    const home = process.env.HOME || "/root";
+    const PATH = home + "/.nargo/bin:" + home + "/.bb/bin:" + process.env.PATH;
+    const env = Object.assign({}, process.env, { PATH, HOME: "/tmp", NARGO_HOME: "/tmp", XDG_CACHE_HOME: "/tmp", XDG_CONFIG_HOME: "/tmp", GIT_CONFIG_NOSYSTEM: "1", GIT_CONFIG_COUNT: "0" });
+
+    execSync(join(__dirname, "bin", "nargo") + " compile", { cwd: workDir, env, stdio: "pipe" });
+
+    const json = join(workDir, "target", "stellarpass_credential.json");
+    execSync(
+      join(__dirname, "bin", "bb") + " write_vk" +
+      " --scheme ultra_honk --oracle_hash keccak" +
+      " --bytecode_path " + json +
+      " --output_path " + join(workDir, "target") +
+      " --output_format bytes_and_fields",
+      { stdio: "pipe", env: Object.assign({}, process.env, { HOME: home }) }
+    );
+
+    const vk = readFileSync(join(workDir, "target", "vk"));
+    res.json({ vk: "0x" + vk.toString("hex"), vkSize: vk.length });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: e.message });
+  } finally {
+    rmSync(workDir, { recursive: true, force: true });
+  }
+});
+
 app.post("/prove", async (req, res) => {
   const credential = req.body;
   const circuitSrc = join(__dirname, "circuits", "stellarpass_credential");
