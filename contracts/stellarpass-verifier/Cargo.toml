@@ -1,0 +1,30 @@
+[package]
+name = "stellarpass-verifier"
+version = "0.1.0"
+edition = "2021"
+description = "StellarPass verifier wrapper: verifies an UltraHonk KYC proof then stamps the identity in the registry."
+
+[lib]
+crate-type = ["cdylib"]
+doctest = false
+
+[dependencies]
+soroban-sdk = "26.0.1"
+# The actual ZK verifier. Pulled from the upstream repo at its CURRENT main,
+# which is CI-proven against Barretenberg v0.87.0 keccak proofs — this is the
+# whole point of the redeploy (the previously deployed contract was built from
+# an older, v0.82.2-era verifier and rejected our v0.87.0 proofs).
+ultrahonk_soroban_verifier = { git = "https://github.com/yugocabrio/ultrahonk-rust-verifier", default-features = false }
+
+[dev-dependencies]
+soroban-sdk = { version = "26.0.1", features = ["testutils"] }
+
+[profile.release]
+opt-level = "z"
+overflow-checks = true
+debug = 0
+strip = "symbols"
+debug-assertions = false
+panic = "abort"
+codegen-units = 1
+lto = true

@@ -16,7 +16,8 @@ import {
 } from "@stellar/stellar-sdk";
 
 const RPC = "https://soroban-testnet.stellar.org";
-const VERIFIER_CONTRACT = "CBB6Z3JJTQQJUY3YP3EQDXZ4IDIZ6R43OUNHOA5HZ3EAPUAGNDJPHFTO";
+// Override with VERIFIER_ID=C... after redeploying the verifier.
+const VERIFIER_CONTRACT = process.env.VERIFIER_ID || "CBB6Z3JJTQQJUY3YP3EQDXZ4IDIZ6R43OUNHOA5HZ3EAPUAGNDJPHFTO";
 // Source account only used to build simulation txs (no signature/funds needed to simulate).
 const DEPLOYER_SECRET = "SDWRR73ERXKASZNOBCYXXMLDDJ5MEZBLB3FGM2ZGMVZEYZWQDU54IW26";
 const WALLET = "GBJPKBUZSCFFYC52CDQJPTU66GHUJ3KBR3DFK5IICILDQ7PW5VQIGINS";
