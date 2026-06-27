@@ -1,24 +1,22 @@
 FROM ubuntu:24.04
 
-RUN apt-get update && apt-get install -y curl nodejs npm && rm -rf /var/lib/apt/lists/*
+# ubuntu:24.04 ships GLIBC 2.39 / GLIBCXX 3.4.33, which satisfies the
+# requirements of the committed bb v0.87.0 binary (needs GLIBC 2.38+).
+RUN apt-get update && apt-get install -y curl ca-certificates nodejs npm && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Install nargo beta.9
-RUN curl -L https://raw.githubusercontent.com/noir-lang/noirup/main/install | bash
-ENV PATH="/root/.nargo/bin:$PATH"
-RUN /root/.nargo/bin/noirup -v 1.0.0-beta.9
-
-# Install bb v0.87.0
-RUN mkdir -p /root/.bb/bin && \
-    curl -L https://github.com/AztecProtocol/aztec-packages/releases/download/v0.87.0/barretenberg-amd64-linux.tar.gz \
-    -o /tmp/bb.tar.gz && \
-    tar -xzf /tmp/bb.tar.gz -C /root/.bb/bin && \
-    chmod +x /root/.bb/bin/bb
-ENV PATH="/root/.bb/bin:$PATH"
+# The prover invokes ./bin/nargo and ./bin/bb by absolute path
+# (see prover-server.mjs). These committed binaries are the SAME
+# nargo beta.9 / bb v0.87.0 that produced the on-chain VK, so the
+# proof format matches the deployed Soroban verifier. Do NOT swap
+# these for bb.js / noir_js npm packages — those are different
+# versions (bb.js 5.x) and would produce an incompatible proof/VK.
+COPY bin ./bin
+RUN chmod +x bin/nargo bin/bb
 
 COPY package.json package-lock.json ./
-RUN npm install
+RUN npm install --omit=dev
 
 COPY circuits ./circuits
 COPY prover-server.mjs ./
@@ -26,6 +24,7 @@ COPY prover-server.mjs ./
 ENV HOME=/root
 ENV NARGO_HOME=/tmp
 ENV XDG_CACHE_HOME=/tmp
+ENV XDG_CONFIG_HOME=/tmp
 ENV PORT=4000
 
 EXPOSE 4000

@@ -1,0 +1,12 @@
+# Render Blueprint — deploys the StellarPass prover as a DOCKER service.
+# The default native Node runtime CANNOT run bb v0.87.0 (needs GLIBC 2.38);
+# Docker with ubuntu:24.04 can. After this deploys, copy the service URL
+# into the Vercel env var PROVER_URL.
+services:
+  - type: web
+    name: stellarpass-prover
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /health
+    autoDeploy: true
