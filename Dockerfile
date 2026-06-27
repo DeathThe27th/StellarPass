@@ -2,7 +2,14 @@ FROM ubuntu:24.04
 
 # ubuntu:24.04 ships GLIBC 2.39 / GLIBCXX 3.4.33, which satisfies the
 # requirements of the committed bb v0.87.0 binary (needs GLIBC 2.38+).
-RUN apt-get update && apt-get install -y curl ca-certificates nodejs npm && rm -rf /var/lib/apt/lists/*
+# jq, gzip, xxd, bash: the bb v0.87.0 CLI shells out to these to extract and
+# decompress the circuit bytecode (jq '.bytecode' | base64 -d | gzip -d).
+# Without jq the pipe is empty -> "gzip: unexpected end of file" /
+# "Input is not large enough". They are NOT optional for prove to work.
+RUN apt-get update && apt-get install -y \
+      curl ca-certificates nodejs npm \
+      jq gzip xxd bash \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
