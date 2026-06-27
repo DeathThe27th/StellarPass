@@ -1,8 +1,16 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import { FlowNav, IconCheck, IconX, IconLink } from "../components/site";
 
 type Status = "idle" | "loading" | "success" | "failed";
+
+const FLOW = [
+  "Sender calls transfer() on the SPASS token contract",
+  "The contract calls verify_id() on the StellarPass registry",
+  "Registry checks the wallet has a valid, non-expired stamp",
+  "Transfer executes, or reverts if the check fails",
+];
 
 export default function DemoPage() {
   const [from, setFrom] = useState("");
@@ -28,7 +36,7 @@ export default function DemoPage() {
         setMessage("Transfer successful. Both wallets passed KYC verification.");
       } else {
         setStatus("failed");
-        setMessage(data.error || "Transfer blocked by KYC registry.");
+        setMessage(data.error || "Transfer blocked by the KYC registry.");
       }
     } catch {
       setStatus("failed");
@@ -36,82 +44,66 @@ export default function DemoPage() {
     }
   }
 
-  const inputStyle: React.CSSProperties = { width: "100%", background: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: 6, padding: "11px 14px", fontSize: 13, color: "#111827", outline: "none", boxSizing: "border-box", fontFamily: "monospace" };
-
   return (
-    <div style={{ fontFamily: "'DM Sans', sans-serif", background: "#F5F7FF", minHeight: "100vh" }}>
-      <nav style={{ height: 52, borderBottom: "1px solid #E5E7EB", background: "white", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 28px" }}>
-        <Link href="/" style={{ display: "flex", alignItems: "center", gap: 6, color: "#6B7280", fontSize: 13, textDecoration: "none" }}>
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 4L6 8L10 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-          Back
-        </Link>
-        <Link href="/" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
-          <div style={{ width: 26, height: 26, borderRadius: 5, background: "#2563EB", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <svg width="13" height="13" viewBox="0 0 12 12" fill="none"><path d="M6 1L11 6L6 11L1 6L6 1Z" fill="white" fillOpacity="0.95"/></svg>
-          </div>
-          <span style={{ fontWeight: 600, fontSize: 14, color: "#111827" }}>StellarPass</span>
-        </Link>
-        <Link href="/verify" style={{ background: "#2563EB", color: "white", borderRadius: 6, padding: "7px 18px", fontSize: 13, fontWeight: 500, textDecoration: "none" }}>Get Verified</Link>
-      </nav>
+    <div className="page wrap-min">
+      <FlowNav rightLabel="Live demo" />
+      <div className="container-tight" style={{ paddingBlock: 64 }}>
+        <span className="eyebrow">Live demo · testnet</span>
+        <h1 className="h2" style={{ marginTop: 16 }}>RWA token transfer.</h1>
+        <p className="body" style={{ marginTop: 12, marginBottom: 32 }}>
+          Move SPASS, a mock regulated asset. The transfer is blocked unless both wallets carry a valid
+          StellarPass stamp.
+        </p>
 
-      <div style={{ maxWidth: 520, margin: "0 auto", padding: "56px 24px" }}>
-        <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "#2563EB", marginBottom: 10 }}>Live Demo</div>
-        <h1 className="sp-display" style={{ fontSize: 34, fontWeight: 400, color: "#111827", letterSpacing: "-0.01em", marginBottom: 8 }}>RWA token transfer</h1>
-        <p style={{ color: "#6B7280", fontSize: 14, marginBottom: 36 }}>Transfer SPASS tokens — a mock SEP-57 regulated asset. Blocked without a valid StellarPass stamp on both wallets.</p>
-
-        <div style={{ background: "white", border: "1px solid #E5E7EB", borderRadius: 10, overflow: "hidden", marginBottom: 14 }}>
-          <div style={{ background: "#F9FAFB", borderBottom: "1px solid #E5E7EB", padding: "10px 20px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span style={{ fontSize: 12, color: "#6B7280", fontFamily: "monospace" }}>SPASS Token Contract</span>
-            <span style={{ fontSize: 10, color: "#9CA3AF", fontFamily: "monospace" }}>CAUSCD22OSFKEN...</span>
+        <div className="card" style={{ marginBottom: 16, overflow: "hidden" }}>
+          <div className="row between" style={{ padding: "12px 20px", borderBottom: "1px solid var(--border)", background: "var(--bg-2)" }}>
+            <span className="mono dim" style={{ fontSize: "0.78rem" }}>SPASS token contract</span>
+            <span className="mono dim" style={{ fontSize: "0.72rem" }}>regulated · SEP-style</span>
           </div>
-          <div style={{ padding: 24 }}>
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ display: "block", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", color: "#6B7280", textTransform: "uppercase" as const, marginBottom: 7 }}>From</label>
-              <input style={inputStyle} placeholder="G..." value={from} onChange={e => setFrom(e.target.value)} />
+          <div className="card-pad">
+            <div className="field">
+              <label className="label">From</label>
+              <input className="input input-mono" placeholder="G..." value={from} onChange={(e) => setFrom(e.target.value)} />
             </div>
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ display: "block", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", color: "#6B7280", textTransform: "uppercase" as const, marginBottom: 7 }}>To</label>
-              <input style={inputStyle} placeholder="G..." value={to} onChange={e => setTo(e.target.value)} />
+            <div className="field">
+              <label className="label">To</label>
+              <input className="input input-mono" placeholder="G..." value={to} onChange={(e) => setTo(e.target.value)} />
             </div>
-            <div style={{ marginBottom: 24 }}>
-              <label style={{ display: "block", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", color: "#6B7280", textTransform: "uppercase" as const, marginBottom: 7 }}>Amount (SPASS)</label>
-              <input type="number" style={{ ...inputStyle, fontFamily: "'DM Sans', sans-serif" }} value={amount} onChange={e => setAmount(e.target.value)} />
+            <div className="field" style={{ marginBottom: 22 }}>
+              <label className="label">Amount (SPASS)</label>
+              <input type="number" className="input" value={amount} onChange={(e) => setAmount(e.target.value)} />
             </div>
-            <button onClick={handleTransfer} disabled={status === "loading"} style={{ width: "100%", background: "#2563EB", color: "white", border: "none", borderRadius: 6, padding: 13, fontSize: 14, fontWeight: 500, cursor: status === "loading" ? "not-allowed" : "pointer", opacity: status === "loading" ? 0.7 : 1, fontFamily: "inherit" }}>
+            <button className="btn btn-primary btn-block" onClick={handleTransfer} aria-disabled={status === "loading"}>
               {status === "loading" ? "Checking KYC registry..." : "Transfer SPASS tokens"}
             </button>
           </div>
         </div>
 
         {status === "success" && (
-          <div style={{ border: "1px solid #BFDBFE", background: "#EFF6FF", borderRadius: 10, padding: 20, marginBottom: 14 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 13L9 17L19 7" stroke="#1D4ED8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              <span style={{ color: "#111827", fontSize: 14, fontWeight: 500 }}>{message}</span>
-            </div>
-            <a href={"https://stellar.expert/explorer/testnet/tx/" + txHash} target="_blank" rel="noopener noreferrer" style={{ color: "#2563EB", fontSize: 12, textDecoration: "none" }}>View transaction</a>
+          <div className="alert alert-ok" style={{ marginBottom: 16, flexDirection: "column" }}>
+            <span className="row gap-2" style={{ color: "var(--text)", fontWeight: 500 }}><span className="accent-text"><IconCheck size={16} /></span> {message}</span>
+            <a href={"https://stellar.expert/explorer/testnet/tx/" + txHash} target="_blank" rel="noopener noreferrer" className="row gap-2 nav-link" style={{ fontSize: "0.8rem", marginTop: 6 }}><IconLink size={14} /> View transaction</a>
           </div>
         )}
 
         {status === "failed" && (
-          <div style={{ border: "1px solid #FECACA", background: "#FEF2F2", borderRadius: 10, padding: 20, marginBottom: 14 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6L18 18" stroke="#DC2626" strokeWidth="2" strokeLinecap="round"/></svg>
-              <span style={{ color: "#DC2626", fontSize: 14, fontWeight: 500 }}>Transfer blocked</span>
-            </div>
-            <p style={{ color: "#6B7280", fontSize: 12, marginLeft: 26, marginBottom: 8 }}>{message}</p>
-            <Link href="/verify" style={{ marginLeft: 26, color: "#2563EB", fontSize: 12, textDecoration: "none" }}>Get verified first</Link>
+          <div className="alert alert-bad" style={{ marginBottom: 16, flexDirection: "column" }}>
+            <span className="row gap-2" style={{ color: "var(--text)", fontWeight: 500 }}><span style={{ color: "var(--danger)" }}><IconX size={16} /></span> Transfer blocked</span>
+            <p className="body" style={{ fontSize: "0.84rem", marginTop: 4 }}>{message}</p>
+            <Link href="/verify" className="nav-link accent-text" style={{ fontSize: "0.82rem", marginTop: 6 }}>Get verified first →</Link>
           </div>
         )}
 
-        <div style={{ border: "1px solid #E5E7EB", borderRadius: 10, padding: 16 }}>
-          <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: "#9CA3AF", marginBottom: 12 }}>How the KYC check works</div>
-          {["Sender calls transfer() on SPASS contract", "Contract calls verify_identity() on StellarPass registry", "Registry checks wallet has valid, non-expired stamp", "Transfer executes or reverts based on result"].map((s, i) => (
-            <div key={i} style={{ display: "flex", gap: 10, marginBottom: 8 }}>
-              <span style={{ fontFamily: "monospace", fontSize: 10, color: "#9CA3AF", marginTop: 1 }}>{i + 1}.</span>
-              <span style={{ fontSize: 12, color: "#6B7280" }}>{s}</span>
-            </div>
-          ))}
+        <div className="card card-pad">
+          <div className="mono dim" style={{ fontSize: "0.72rem", letterSpacing: "0.1em", marginBottom: 14 }}>HOW THE KYC CHECK WORKS</div>
+          <div className="stack gap-3">
+            {FLOW.map((s, i) => (
+              <div key={i} className="row gap-3" style={{ alignItems: "flex-start" }}>
+                <span className="mono accent-text" style={{ fontSize: "0.78rem", marginTop: 1 }}>{i + 1}</span>
+                <span className="body" style={{ fontSize: "0.88rem" }}>{s}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
