@@ -9,7 +9,9 @@ crate-type = ["cdylib"]
 doctest = false
 
 [dependencies]
-soroban-sdk = "26.0.1"
+# `alloc` provides the global allocator the verifier crate needs (it uses heap
+# Vecs). Without it the wasm build fails: "no global memory allocator found".
+soroban-sdk = { version = "26.0.1", features = ["alloc"] }
 # The actual ZK verifier. Pulled from the upstream repo at its CURRENT main,
 # which is CI-proven against Barretenberg v0.87.0 keccak proofs — this is the
 # whole point of the redeploy (the previously deployed contract was built from
