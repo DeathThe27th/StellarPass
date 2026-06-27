@@ -49,7 +49,7 @@ app.post("/prove", async (req, res) => {
 
     execSync(join(__dirname, "bin", "nargo") + " execute", {
       cwd: workDir,
-      env: Object.assign({}, process.env, { PATH, HOME: home, NARGO_HOME: "/tmp" }),
+      env: Object.assign({}, process.env, { PATH, HOME: "/tmp", NARGO_HOME: "/tmp", XDG_CACHE_HOME: "/tmp", XDG_CONFIG_HOME: "/tmp", GIT_CONFIG_NOSYSTEM: "1", GIT_CONFIG_COUNT: "0" }),
       stdio: "pipe",
     });
 
