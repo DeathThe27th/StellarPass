@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
       fee: BASE_FEE,
       networkPassphrase: Networks.TESTNET,
     })
-      .addOperation(contract.call("verify_identity", new Address(wallet).toScVal()))
+      .addOperation(contract.call("verify_id", new Address(wallet).toScVal()))
       .setTimeout(30)
       .build();
 
