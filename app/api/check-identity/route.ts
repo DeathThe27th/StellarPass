@@ -8,6 +8,7 @@ import {
   Address,
   scValToNative,
   Keypair,
+  Account,
 } from "@stellar/stellar-sdk";
 
 const RPC_URL = process.env.NEXT_PUBLIC_STELLAR_RPC!;
@@ -20,17 +21,11 @@ export async function GET(req: NextRequest) {
 
   try {
     const contract = new Contract(REGISTRY_CONTRACT);
-    // Use a dummy keypair just for simulation
-    const dummy = Keypair.random();
-    const account = await server.getAccount(dummy.publicKey()).catch(() => null);
-
-    if (!account) {
-      // Friendbot the dummy account for simulation
-      await fetch(`https://friendbot.stellar.org?addr=${dummy.publicKey()}`);
-      await new Promise(r => setTimeout(r, 3000));
-    }
-
-    const acc = await server.getAccount(dummy.publicKey());
+    // Read-only simulation never submits, so the source account does not need
+    // to exist or be funded. Build from a throwaway local Account to avoid a
+    // network fetch / friendbot dependency (which previously threw
+    // "Account not found" and made every wallet read as not-verified).
+    const acc = new Account(Keypair.random().publicKey(), "0");
     const tx = new TransactionBuilder(acc, {
       fee: BASE_FEE,
       networkPassphrase: Networks.TESTNET,
