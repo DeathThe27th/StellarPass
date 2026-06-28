@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Nav, Footer, IconArrow, IconCheck, IconShield, IconLock, IconChip, IconLink } from "./components/site";
+import { Nav, Footer, IconArrow, IconCheck, IconLock, IconChip, IconLink } from "./components/site";
+import { AcmeHero } from "./components/hero";
 
 const VERIFIER = "CA2J45JL2GQXQORQHLAR6XRFFROJLQHZC5XVWTF5TO3PZ557U5CJ3C6S";
 
@@ -23,45 +24,8 @@ export default function Home() {
     <div className="page">
       <Nav />
 
-      {/* ===== HERO — asymmetric split ===== */}
-      <header className="section" style={{ paddingTop: 72, paddingBottom: 72 }}>
-        <div className="container hero-grid">
-          <div>
-            <span className="eyebrow reveal">Zero-knowledge KYC · Stellar</span>
-            <h1 className="display reveal d1" style={{ marginTop: 22 }}>
-              Prove you&apos;re verified.<br />
-              <span className="accent-text">Reveal nothing.</span>
-            </h1>
-            <p className="lead reveal d2" style={{ marginTop: 22 }}>
-              One zero-knowledge proof, checked on-chain by a Soroban contract, unlocks every regulated
-              asset on Stellar. Your identity never leaves your device.
-            </p>
-            <div className="row gap-3 reveal d3" style={{ marginTop: 32, flexWrap: "wrap" }}>
-              <Link href="/verify" className="btn btn-primary">Get verified <IconArrow /></Link>
-              <Link href="/check" className="btn btn-ghost">Check a wallet</Link>
-            </div>
-          </div>
-
-          {/* cryptographic motif visualizes "proof verified on-chain" */}
-          <div className="hero-visual reveal d4">
-            <div className="orbit" aria-hidden>
-              <div className="orbit-ring" />
-              <div className="orbit-ring r2" />
-              <div className="orbit-ring r3" />
-              <div className="orbit-spin"><span className="orbit-node" /></div>
-              <div className="orbit-spin rev" style={{ inset: "13%" }}><span className="orbit-node dim" /></div>
-              <div className="orbit-spin" style={{ inset: "26%", animationDuration: "20s" }}><span className="orbit-node" style={{ width: 7, height: 7 }} /></div>
-              <div className="orbit-core accent-text">
-                <IconShield size={34} />
-              </div>
-            </div>
-            <div className="row gap-2 center" style={{ justifyContent: "center", marginTop: 10 }}>
-              <span className="dot dot-live" />
-              <span className="mono dim" style={{ fontSize: "0.76rem" }}>proof verified on-chain · testnet</span>
-            </div>
-          </div>
-        </div>
-      </header>
+      {/* ===== HERO — acme-style centered hero over dotted globe ===== */}
+      <AcmeHero />
 
       {/* ===== STAT STRIP (different family) ===== */}
       <section className="container">
