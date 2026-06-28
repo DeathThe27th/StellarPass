@@ -34,7 +34,7 @@ export function Logo({ withWord = true }: { withWord?: boolean }) {
     <Link href="/" className="brand">
       <span className="brand-mark" aria-hidden>
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-          <path d="M12 2l2.6 6.4L21 11l-6.4 2.6L12 20l-2.6-6.4L3 11l6.4-2.6L12 2z" fill="#04140d" fillOpacity="0.9" />
+          <path d="M12 2l2.6 6.4L21 11l-6.4 2.6L12 20l-2.6-6.4L3 11l6.4-2.6L12 2z" fill="#ffffff" />
         </svg>
       </span>
       {withWord && <span>StellarPass</span>}
@@ -59,14 +59,15 @@ export function Nav({ cta = true }: { cta?: boolean }) {
   );
 }
 
-export function FlowNav({ rightLabel }: { rightLabel?: string }) {
+/* Inner-page nav: only the back button and the StellarPass logo. */
+export function FlowNav() {
   return (
     <nav className="nav">
       <Link href="/" className="nav-link" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
         <IconBack size={18} /> Back
       </Link>
       <Logo />
-      <span className="mono dim" style={{ fontSize: "0.78rem" }}>{rightLabel ?? " "}</span>
+      <span aria-hidden style={{ width: 56 }} />
     </nav>
   );
 }
@@ -75,17 +76,7 @@ export function Footer() {
   return (
     <footer className="footer">
       <div className="container row between" style={{ flexWrap: "wrap", gap: 16 }}>
-        <div className="row gap-3">
-          <Logo />
-          <span className="dim" style={{ fontSize: "0.82rem" }}>ZK identity, verified on-chain.</span>
-        </div>
-        <div className="row gap-4 mono dim" style={{ fontSize: "0.78rem", flexWrap: "wrap" }}>
-          <span>Noir + UltraHonk</span>
-          <span style={{ opacity: 0.4 }}>/</span>
-          <span>Soroban</span>
-          <span style={{ opacity: 0.4 }}>/</span>
-          <a href="https://stellar.expert/explorer/testnet" target="_blank" rel="noopener noreferrer" className="nav-link">Stellar testnet</a>
-        </div>
+        <Logo />
       </div>
     </footer>
   );

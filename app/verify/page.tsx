@@ -10,10 +10,6 @@ type Step = "welcome" | "personal" | "wallet" | "review" | "proving" | "submitti
 
 // Onfido-style: a short, focused flow with a visible step position.
 const FORM_STEPS: Step[] = ["personal", "wallet", "review"];
-const STEP_LABEL: Record<Step, string> = {
-  welcome: "Get started", personal: "Your details", wallet: "Your wallet", review: "Review",
-  proving: "Verifying", submitting: "Verifying", done: "Complete", error: "Review",
-};
 
 export default function VerifyPage() {
   const [step, setStep] = useState<Step>("welcome");
@@ -83,7 +79,7 @@ export default function VerifyPage() {
 
   const wrap = (content: React.ReactNode, opts?: { showHead?: boolean }) => (
     <div className="page wrap-min">
-      <FlowNav rightLabel={STEP_LABEL[step]} />
+      <FlowNav />
       <div style={{ display: "flex", justifyContent: "center", alignItems: "flex-start", padding: "56px 24px" }}>
         <div style={{ width: "100%", maxWidth: 480 }}>
           <div className="card" style={{ overflow: "hidden" }}>
@@ -129,11 +125,6 @@ export default function VerifyPage() {
         ))}
       </div>
       <button className="btn btn-primary btn-block" onClick={() => setStep("personal")}>Start verification <IconArrow /></button>
-      <div className="row" style={{ justifyContent: "center", gap: 18, marginTop: 18 }}>
-        {["Zero-knowledge", "Under 2 min", "Stellar native"].map((t) => (
-          <span key={t} className="mono dim" style={{ fontSize: "0.72rem" }}>{t}</span>
-        ))}
-      </div>
     </div>
   );
 

@@ -156,9 +156,16 @@ button { font-family: inherit; }
 .label { color: var(--text); font-size: .88rem; font-weight: 500; }
 .input, .select {
   background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--r-btn);
-  width: 100%; color: var(--text); outline: none; padding: 12px 14px; font-family: inherit;
-  font-size: .94rem; transition: border-color .2s, box-shadow .2s;
+  width: 100%; max-width: 100%; min-width: 0; color: var(--text); outline: none;
+  padding: 12px 14px; font-family: inherit; font-size: .94rem;
+  transition: border-color .2s, box-shadow .2s; box-sizing: border-box;
 }
+/* date inputs overflow their container on iOS/WebKit without this */
+input[type="date"].input {
+  -webkit-appearance: none; appearance: none; min-height: 46px; display: block;
+}
+input[type="date"].input::-webkit-date-and-time-value { text-align: left; }
+input[type="date"].input::-webkit-calendar-picker-indicator { margin-left: auto; }
 .input::placeholder { color: var(--dim); }
 .input:focus, .select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-tint); }
 .input-mono { font-family: var(--font-mono); font-size: .86rem; }
@@ -364,13 +371,28 @@ select.select option { background: var(--surface); color: var(--text); }
   .receipt { position: static; }
 }
 @media (max-width: 560px) {
+  .container, .container-tight { padding-inline: 18px; }
+  .section { padding-block: 56px; }
+  .nav { padding-inline: 18px; }
+  .card-pad { padding: 20px; }
   .stat-strip { grid-template-columns: 1fr; }
-  .stat { border-left: 0; border-top: 1px solid var(--border); }
+  .stat { border-left: 0; border-top: 1px solid var(--border); padding: 20px 22px; }
   .stat:first-child { border-top: 0; }
   .flow { grid-template-columns: 1fr; }
   .flow-step { border-left: 0 !important; padding-left: 0 !important; }
-  .hero { min-height: auto; padding-top: 80px; }
+  .hero { min-height: auto; padding: 72px 18px 56px; }
+  .display { font-size: clamp(2.1rem, 9vw, 2.8rem); }
+  .h2 { font-size: clamp(1.6rem, 6vw, 2rem); }
+  .lead { font-size: 1rem; }
+  /* 16px inputs stop iOS Safari from auto-zooming on focus */
+  .input, .select { font-size: 16px; }
+  .input-mono { font-size: 0.82rem; }
+  .hero-cta .btn { width: 100%; }
+  .summary-row { flex-wrap: wrap; gap: 4px; }
+  .summary-row .v { text-align: left; }
 }
+/* never let anything force a horizontal scrollbar */
+html, body { max-width: 100%; overflow-x: hidden; }
 @media (prefers-reduced-motion: reduce) {
   .orbit-spin, .dot-live, .spinner { animation: none !important; }
   .reveal { opacity: 1 !important; animation: none !important; transform: none !important; }

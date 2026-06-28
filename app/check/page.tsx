@@ -23,7 +23,7 @@ export default function CheckPage() {
 
   return (
     <div className="page wrap-min">
-      <FlowNav rightLabel="Registry lookup" />
+      <FlowNav />
       <div className="container-tight" style={{ paddingBlock: 64 }}>
         <span className="eyebrow">Registry lookup</span>
         <h1 className="h2" style={{ marginTop: 16 }}>Check any wallet.</h1>

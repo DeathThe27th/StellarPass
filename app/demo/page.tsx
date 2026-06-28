@@ -46,7 +46,7 @@ export default function DemoPage() {
 
   return (
     <div className="page wrap-min">
-      <FlowNav rightLabel="Live demo" />
+      <FlowNav />
       <div className="container-tight" style={{ paddingBlock: 64 }}>
         <span className="eyebrow">Live demo · testnet</span>
         <h1 className="h2" style={{ marginTop: 16 }}>RWA token transfer.</h1>

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { GlobeBackground } from "./globe";
-import { IconArrow, IconShield } from "./site";
+import { IconArrow } from "./site";
 
 /**
  * AcmeHero — centered launch-style hero. The dotted globe is the asset, so a
@@ -18,14 +18,7 @@ export function AcmeHero() {
       </div>
 
       <div className="hero-inner">
-        <span className="announce reveal">
-          <span className="announce-chip">
-            <IconShield size={13} /> Live
-          </span>
-          Zero-knowledge KYC, verified on Stellar
-        </span>
-
-        <h1 className="display reveal d1" style={{ marginTop: 26 }}>
+        <h1 className="display reveal d1">
           Prove you&apos;re verified.
           <br />
           <span className="accent-text" style={{ fontWeight: 700 }}>
